@@ -1,0 +1,77 @@
+---
+title: "Filtro Calculate"
+author: "Cesar Poggi"
+date: "2023-01-26"
+output: html_document
+---
+
+```{r, include=FALSE}
+library(dplyr)
+library(readxl)
+library(plotly)
+data2 <- read_excel("data-raw/data2.xlsx")
+
+colnames(data2)[c(10)]<-c("status")
+colnames(data2)[c(18)]<-c("consentimiento")
+colnames(data2)[c(12)]<-c("asistencia")
+colnames(data2)[c(11)]<-c("enumerador")
+colnames(data2)[c(161)]<-c("survey_mins4")
+
+dataP <- data2 %>%
+  filter(status == "status01")%>%
+  filter(consentimiento == "yes")
+
+dataP <- dataP[c(4:7,160,161)]
+dataP <- dataP[c(3,6)]
+dataP[,c(1:2)] <- sapply(dataP[c(1:2)],as.numeric)
+
+dataP <- dataP %>% mutate_if(is.numeric, round, 0)
+
+dataP$SumSec1Sec2 <- dataP$survey_mins1 + dataP$survey_mins4
+
+#export(data2, "dataF.xlsx")
+```
+
+
+# Principal Referencia para cortar casos
+
+## Tiempo requerido para completar partes específicas
+
+```{r, warning=FALSE, message=FALSE}
+summary(dataP)
+```
+
+
+##### Protección + Secciones PDM específicas = Parte 2 
+##### Retroalimentación + Quejas + Información = Parte 3
+
+```{r, warning=FALSE, message=FALSE}
+fig1.1 <- plot_ly(x = dataP$survey_mins1, name = "Parte 2",  type = "box") %>%
+  add_boxplot(x= dataP$survey_mins4, name = "Parte 3", type = "box") %>%
+  layout(title = "Sección Principal y Final de Encuesta") %>%
+  layout(autosize = F, width = 1000, height = 500)
+fig1.1
+```
+```{r}
+dataF <- dataP %>%
+  filter(survey_mins1 > 0) %>%
+  filter(survey_mins4 > 4)
+```
+
+
+```{r}
+aggregate(survey_mins1 ~ enumerador, data = data2, mean)
+```
+
+```{r}
+table(data2$survey_mins1 < 1)
+table(data2$survey_mins4 < 5)
+```
+
+
+```{r}
+data2.1 <- data2 %>%
+  filter(survey_mins1 < 2)
+aggregate(survey_mins1 ~ enumerador, data = data2.1, mean)
+```
+

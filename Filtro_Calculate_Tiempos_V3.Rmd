@@ -1,0 +1,103 @@
+---
+title: "Filtro Calculate"
+author: "Cesar Poggi"
+date: "2023-01-26"
+output: html_document
+---
+
+```{r, include=FALSE}
+library(dplyr)
+library(readxl)
+library(plotly)
+data2 <- read_excel("data-raw/data2.xlsx")
+```
+
+
+```{r, include=FALSE}
+colnames(data2)[c(10)]<-c("status")
+colnames(data2)[c(18)]<-c("consentimiento")
+colnames(data2)[c(12)]<-c("asistencia")
+colnames(data2)[c(11)]<-c("enumerador")
+colnames(data2)[c(161)]<-c("survey_mins4")
+```
+
+```{r}
+#Limpiamos tipos de columnas, seleccionamos las variables de interés y ordenamos
+dataP <- data2[c(6,10:12,18,161)]
+dataP <- dataP[c(3,1,6,2,4,5)]
+dataP[,c(2:3)] <- sapply(dataP[c(2:3)],as.numeric)
+
+dataP <- dataP %>% mutate_if(is.numeric, round, 2)
+
+dataP$SumSec2Sec3 <- dataP$survey_mins1 + dataP$survey_mins4
+dataP <- dataP[c(1:3,7,4:6)]
+```
+
+```{r, include=FALSE}
+#Filtramos solo aquellos casos que indicaron su consentimiento y recibieron asistencia
+dataP <- dataP %>%
+  filter(asistencia != "no_asistencia")%>%
+  filter(consentimiento == "yes")
+```
+
+
+
+
+## Tiempo requerido para completar partes específicas
+
+##### Retroalimentación + Quejas + Información = Parte 3
+##### Protección + Secciones PDM específicas = Parte 2 
+
+
+```{r, warning=FALSE, message=FALSE}
+fig1.1 <- plot_ly(x = dataP$survey_mins1, name = "Parte 2",  type = "box") %>%
+  add_boxplot(x= dataP$survey_mins4, name = "Parte 3", type = "box") %>%
+  layout(title = "Sección Principal y Final de Encuesta") %>%
+  layout(autosize = F, width = 1000, height = 500)
+fig1.1
+```
+
+
+```{r}
+#Total de Encuestas por Persona
+table(dataP$enumerador)
+
+aggregate(survey_mins1 ~ enumerador, data = dataP, length)
+```
+
+
+
+```{r}
+# Aggregate 1: Seleccionar los casos que se demoraron menos a 1min para completar la 2DA PARTE
+dataP2 <- dataP %>%
+  filter(survey_mins1 < 1.5)
+
+dataP2Show <- do.call(data.frame, aggregate(survey_mins1 ~ enumerador, data = dataP2, FUN = function(x) c(mn = mean(x), n = length(x))))
+dataP2Show <- dataP2Show[order(dataP2Show$survey_mins1.mn),]
+```
+
+```{r}
+# Aggregate 2: Seleccionar los casos que se demoraron menos a 7min para completar la 3DA PARTE. Esto debido a que el menor valor es 5.2 min y el 50% de los casos se encuentra entre 10.96 y el 23.33 minutos. 7 es un punto medio entre el mínio y el valor a partir del cual empieza el 50%.
+dataP3 <- dataP %>%
+  filter(survey_mins4 < 7)
+dataP3Show <- do.call(data.frame, aggregate(survey_mins4 ~ enumerador, data = dataP3, FUN = function(x) c(mn = mean(x), n = length(x))))
+dataP3Show <- dataP3Show[order(dataP3Show$survey_mins4.mn),]
+```
+
+```{r}
+# Aggregate 3: Ver la suma de los casos
+dataPSum <- dataP 
+dataPSumShow <- do.call(data.frame, aggregate(SumSec2Sec3 ~ enumerador, data = dataPSum, FUN = function(x) c(mn = mean(x), median(x), n = length(x))))
+dataPSumShow <- dataPSumShow[order(dataPSumShow$SumSec2Sec3.mn),]
+```
+
+```{r}
+# Aggregate 4: Hacer filtrado de tanto la segunda parte y luego de la tercera
+dataP1_2 <- dataP %>%
+  filter(survey_mins1 < 1.5 & survey_mins4 < 7)
+dataP1_2Show <- aggregate(cbind(survey_mins1, survey_mins4) ~ enumerador, data = dataP1_2, length)
+dataP1_2Show <- dataP1_2Show[order(dataP1_2Show$survey_mins1, dataP1_2Show$survey_mins1 ),]
+```
+
+
+
