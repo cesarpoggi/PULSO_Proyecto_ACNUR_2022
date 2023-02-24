@@ -1,2 +1,3 @@
-# PULSO_Proyecto_ACNUR_2022
- Procesamiento de datos para el estudio de ACNUR sobre immigración en Perú. Se utiliza el paquete Kobo Cruncher.
+# PULSO Proyecto ACNUR 2022
+
+De utilizar este trabajo, por favor, referenciar/citar al usurio del presente repositorio.
