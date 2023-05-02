@@ -9,7 +9,7 @@ output: html_document
 library(dplyr)
 library(readxl)
 library(plotly)
-data2 <- read_excel("data-raw/data2.xlsx")
+data2 <- read_excel("data-raw/DATA2.xlsx")
 ```
 
 
